@@ -17,10 +17,10 @@ To understand how PoS word, take a look at the this sample sentence:
     cancer (NN) - Noun, singular
 
 ## How to Run it 
-Check out the Jupiter notebook with name 'HiddenMarkovModelforPOS.ipynb'
+Check out the Jupiter notebook with name '_HiddenMarkovModelforPOS.ipynb_'
 
 ## Data
-The dataset comes from the Brown Corpus [https://en.wikipedia.org/wiki/Brown_Corpus] that can be downloaded from NLTK library. The tags are the universal tags given in tags-universal.txt file. 
+The dataset comes from the [Brown Corpus](https://en.wikipedia.org/wiki/Brown_Corpus) that can be downloaded from NLTK library. The tags are the universal tags given in tags-universal.txt file. 
 
 ## Method 
 This notebook uses Hidden Markov Model (HMM) to determine the tag in a given text. I am comparing the performance of HMM model to a base line model that simply counts the frequency of each word in the training set to asses the tag in the test set. 
@@ -30,4 +30,6 @@ Hidden Markov Model (HMM) is a probabilistic model that calculates the likelyhoo
     Emissional probability: how likely is for a noun to be 'medicine' (form example above), and a verb to be treat. 
 
 ## Library 
-I am using the pomegranate[https://pomegranate.readthedocs.io/en/latest/] library  that has HMM implementation.  
+I am using the [pomegranate](https://pomegranate.readthedocs.io/en/latest/) library  that has HMM implementation.  
+
+This site was built using [GitHub Pages](https://pages.github.com/).
