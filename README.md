@@ -31,5 +31,3 @@ Hidden Markov Model (HMM) is a probabilistic model that calculates the likelyhoo
 
 ## Library 
 I am using the [pomegranate](https://pomegranate.readthedocs.io/en/latest/) library  that has HMM implementation.  
-
-This site was built using [GitHub Pages](https://pages.github.com/).
