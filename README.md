@@ -1,7 +1,7 @@
 ## What is Part of Speech Tagger
 Tagging part of speech (PoS) helps us understand unstructured text better and gives us the ability to extract information by looking at the gramatical structure of a sentence. Each word is assigned with a grammatical tag (e.g. verb, noun, modal), allowing us to understand the words based on there they are located in a sentence. This also allows to distinguish words that are the same, but have different meaning (for example 'I love Spot' vs 'I spot a bird'). 
 
-PoS taggers are powerful. They are predominantly used in grammar and spelling checks, however their applications are wider. 
+PoS taggers are powerful. They are predominantly used in grammar and spelling checks, however their applications are wider. HMMs are used for gene generation in BioInformatics, speech recognision and generation, machine translation are some of the applications HMMs have showns promising results. 
 
 To understand how PoS word, take a look at the this sample sentence: 
  "This medicine is used to treat lung cancer"
@@ -31,3 +31,5 @@ Hidden Markov Model (HMM) is a probabilistic model that calculates the likelyhoo
 
 ## Library 
 I am using the [pomegranate](https://pomegranate.readthedocs.io/en/latest/) library  that has HMM implementation.  
+
+## Acknowledgement
