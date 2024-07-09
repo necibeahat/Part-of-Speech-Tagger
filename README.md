@@ -4,7 +4,7 @@ Do you remember back in school when we learned about word classes? How you tried
 ## What is *Part of Speech Tagger*
 Part of speech tagging (PoS) is labelling words in a sentence according to their word classes or lexical categories, if you want it to sounds fancy, or simply their part of speech. Tagging part of speech (PoS) helps us understand unstructured text (e.g. academic literature, social media post) better, allowing us to extract information by analysing the gramatical structure of a sentence. Each word is assigned with a lexical category (e.g. verb, noun, modal), enabling us to extract data and convert unstructured text to structured format. 
 
-PoS taggers are powerful tools. They are predominantly used in grammar and spelling checks, but their applications are broader. 
+PoS taggers are powerful tools. By understanding the gramatical structure of a text, we can improve the search relevance by taking into account the context of queries. In question and answering systems, by understanding the gramatical structure of the question, we can have a better extraction of answer from knowledge base. 
 
 One statistical method that shows promising results in tagging new text accurately is Hidden Markov Model (HMM). This notebook implement HMM for PoS and evaluates model acuracy in comparison to tagging words based on how frequently they have been tagged with a certain word class. 
 
@@ -23,7 +23,7 @@ To understand how PoS works, take a look at the this sample sentence:
 
 ## Why do we need it? 
 Let's look at the big picture. Why do we want to know the word class of text? We don't worry about whether a word is a noun or an adjective when we speak. This is because our brains tag words automatically. So when a friend says, "It’s an interesting book," we naturally think of a book 📚, and not a holiday they might be going to. 
-ß
+
 We need to spell it out for a computer. Once we do, we can start asking important questions about our data, like "What happened?" and "How did it happen?" We can make predictions by asking, "Why did it happen?" and ultimately figure out how we can make something happen or prevent it from happening.
 
 This is one of the methods for turning unstructured text into a structured format that serves as the foundation.
