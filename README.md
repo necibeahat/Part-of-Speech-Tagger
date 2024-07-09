@@ -4,11 +4,7 @@ Do you remember back in school when we learned about word classes? How you tried
 ## What is *Part of Speech Tagger*
 Part of speech tagging (PoS) is labelling words in a sentence according to their word classes or lexical categories, if you want it to sounds fancy, or simply their part of speech. Tagging part of speech (PoS) helps us understand unstructured text (e.g. academic literature, social media post) better, allowing us to extract information by analysing the gramatical structure of a sentence. Each word is assigned with a lexical category (e.g. verb, noun, modal), enabling us to extract data and convert unstructured text to structured format. 
 
-PoS taggers are powerful tools. By understanding the gramatical structure of a text, we can improve the search relevance by taking into account the context of queries. In question and answering systems, by understanding the gramatical structure of the question, we can have a better extraction of answer from knowledge base. 
-
-One statistical method that shows promising results in tagging new text accurately is Hidden Markov Model (HMM). This notebook implement HMM for PoS and evaluates model acuracy in comparison to tagging words based on how frequently they have been tagged with a certain word class. 
-
-To understand how PoS works, take a look at the this sample sentence: 
+To understand part of speech taggings, take a look at the this sample sentence: 
  "This medicine is used to treat lung cancer"
 
  Let's assign tags to each word: 
@@ -20,6 +16,10 @@ To understand how PoS works, take a look at the this sample sentence:
  - treat (VB) - Verb, base form
  - lung (NN) - Noun, singular (functioning as an adjective here, known as a noun adjunct)
  - cancer (NN) - Noun, singular
+
+PoS taggers are powerful tools. By understanding the gramatical structure of a text, we can improve the search relevance as we will take into account the context of queries. In question and answering systems, the gramatical structure of the question can give us a better extraction of answer from the knowledge base. 
+
+One statistical method that shows promising results in tagging new text accurately is Hidden Markov Model (HMM). This notebook implement HMM for PoS and evaluates model acuracy in comparison to tagging words based on how frequently they have been tagged with a certain word class. 
 
 ## Why do we need it? 
 Let's look at the big picture. Why do we want to know the word class of text? We don't worry about whether a word is a noun or an adjective when we speak. This is because our brains tag words automatically. So when a friend says, "It’s an interesting book," we naturally think of a book 📚, and not a holiday they might be going to. 
@@ -42,11 +42,11 @@ We don't want the word 'book' in the second sentence to be tagged a a verb just 
 
 For this reason, we use HMM model. 
 
-__HMM__ is a probabilistic model that calculates the likelyhood of a tag and a word. The likelyhood is determined based on the transitional and emissional probabilities. 
+__HMM__ is a probabilistic model that calculates the likelihood of a tag and a word. The likelihood is determined based on the transitional and emissional probabilities. 
 - Transitional probability: how likely is a noun followed by a verb, verb followed by a model, and so on
 - Emissional probability: how likely is for a noun to be 'medicine' (form example above), and a verb to be treat. 
 
-## How to run it 
+## How to run it locally
 Check out the Jupiter notebook with name '_HiddenMarkovModelforPOS.ipynb_' 
 
 ## Library 
