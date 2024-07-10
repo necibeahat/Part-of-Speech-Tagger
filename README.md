@@ -38,7 +38,7 @@ Counting the frequency of tags is simple to understand and implement, but has it
 - It’s an interesting **book**. (noun)
 - We ought to **book** a holiday soon. (verb)
 
-We don't want the word 'book' in the second sentence to be tagged a a verb just because there are more 'books' that are nouns in the corpora. 
+We don't want the word 'book' in the second sentence to be tagged as a noun, even thought it should be verb, just because there are more 'books' that are nouns in the corpora. 
 
 For this reason, we use HMM model. 
 
