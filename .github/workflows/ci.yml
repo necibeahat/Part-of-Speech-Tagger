@@ -1,0 +1,199 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+        exclude:
+          # Exclude some combinations to reduce CI time
+          - os: windows-latest
+            python-version: '3.8'
+          - os: macos-latest
+            python-version: '3.8'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz graphviz-dev
+
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install graphviz
+
+    - name: Install system dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install graphviz
+
+    - name: Upgrade pip and install build tools
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+    - name: Run tests with coverage
+      run: |
+        pytest test_helpers.py -v --cov=helpers --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort
+
+    - name: Check code formatting with Black
+      run: |
+        black --check --diff .
+
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only --diff .
+
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  notebook-validation:
+    name: Validate Jupyter Notebooks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz graphviz-dev
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+    - name: Validate notebook syntax
+      run: |
+        jupyter nbconvert --to notebook --execute --inplace HiddenMarkovModelforPOS.ipynb --ExecutePreprocessor.timeout=600
+        jupyter nbconvert --to notebook --execute --inplace DownloadDataset.ipynb --ExecutePreprocessor.timeout=300
+
+    - name: Convert notebooks to HTML for artifacts
+      if: always()
+      run: |
+        jupyter nbconvert --to html HiddenMarkovModelforPOS.ipynb
+        jupyter nbconvert --to html DownloadDataset.ipynb
+
+    - name: Upload notebook artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: executed-notebooks
+        path: |
+          *.html
+          *.ipynb
+
+  data-validation:
+    name: Validate Data Files
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Validate data files exist
+      run: |
+        test -f data/brown-universal.txt || (echo "Brown corpus file missing" && exit 1)
+        test -f data/tags-universal.txt || (echo "Tags file missing" && exit 1)
+
+    - name: Check data file integrity
+      run: |
+        # Check that tags file contains expected universal tags
+        python -c "
+        with open('data/tags-universal.txt', 'r') as f:
+            tags = set(f.read().strip().split('\n'))
+        expected = {'.', 'ADJ', 'ADP', 'ADV', 'CONJ', 'DET', 'NOUN', 'NUM', 'PRON', 'PRT', 'VERB', 'X'}
+        assert tags == expected, f'Tags mismatch: expected {expected}, got {tags}'
+        print('✓ Tags file validation passed')
+        "
+
+        # Check that brown corpus file is not empty and has expected format
+        python -c "
+        import os
+        size = os.path.getsize('data/brown-universal.txt')
+        assert size > 1000, f'Brown corpus file too small: {size} bytes'
+        
+        with open('data/brown-universal.txt', 'r') as f:
+            first_lines = [f.readline().strip() for _ in range(5)]
+        
+        # Check that we have sentence identifiers and word-tag pairs
+        assert any(line and not '\t' in line for line in first_lines), 'No sentence identifiers found'
+        assert any('\t' in line for line in first_lines), 'No word-tag pairs found'
+        print('✓ Brown corpus file validation passed')
+        "

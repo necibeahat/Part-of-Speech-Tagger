@@ -1,0 +1,288 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y graphviz graphviz-dev
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+    - name: Run full test suite
+      run: |
+        pytest test_helpers.py -v --cov=helpers --cov-report=term-missing
+
+    - name: Execute notebooks for release validation
+      run: |
+        jupyter nbconvert --to notebook --execute --inplace HiddenMarkovModelforPOS.ipynb --ExecutePreprocessor.timeout=600
+        jupyter nbconvert --to notebook --execute --inplace DownloadDataset.ipynb --ExecutePreprocessor.timeout=300
+
+    - name: Generate release artifacts
+      run: |
+        # Create release directory
+        mkdir -p release-artifacts
+        
+        # Copy main files
+        cp README.md release-artifacts/
+        cp requirements.txt release-artifacts/
+        cp helpers.py release-artifacts/
+        cp test_helpers.py release-artifacts/
+        cp -r data/ release-artifacts/
+        
+        # Convert notebooks to HTML for release
+        jupyter nbconvert --to html HiddenMarkovModelforPOS.ipynb --output release-artifacts/HiddenMarkovModelforPOS.html
+        jupyter nbconvert --to html DownloadDataset.ipynb --output release-artifacts/DownloadDataset.html
+        
+        # Create a release package
+        tar -czf release-artifacts/nlp-pos-tagging-release.tar.gz \
+          README.md requirements.txt helpers.py test_helpers.py data/ \
+          HiddenMarkovModelforPOS.ipynb DownloadDataset.ipynb
+
+    - name: Generate changelog
+      run: |
+        # Generate changelog from git commits
+        cat > CHANGELOG.md << 'EOF'
+        # Changelog
+        
+        ## [${GITHUB_REF#refs/tags/}] - $(date +%Y-%m-%d)
+        
+        ### Features
+        - Hidden Markov Model implementation for POS tagging
+        - Comprehensive data processing utilities
+        - Model visualization capabilities
+        - Full test suite with high coverage
+        - Jupyter notebook tutorials and examples
+        
+        ### Documentation
+        - Complete API documentation
+        - Installation and usage guides
+        - Example notebooks with detailed explanations
+        
+        ### Testing
+        - Unit tests for all helper functions
+        - Integration tests for data processing
+        - Notebook validation tests
+        - Continuous integration pipeline
+        
+        ### Data
+        - Brown Corpus with universal tagset
+        - Preprocessed training and testing datasets
+        - Tag definitions and mappings
+        EOF
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+        files: |
+          release-artifacts/*
+        generate_release_notes: true
+
+  publish-package:
+    name: Publish Python Package
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip build twine
+
+    - name: Create setup.py for package
+      run: |
+        cat > setup.py << 'EOF'
+        from setuptools import setup, find_packages
+
+        with open("README.md", "r", encoding="utf-8") as fh:
+            long_description = fh.read()
+
+        with open("requirements.txt", "r", encoding="utf-8") as fh:
+            requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+
+        setup(
+            name="nlp-pos-tagging-hmm",
+            version="${GITHUB_REF#refs/tags/v}",
+            author="NLP Project Team",
+            author_email="",
+            description="Hidden Markov Model implementation for Part of Speech tagging",
+            long_description=long_description,
+            long_description_content_type="text/markdown",
+            url="https://github.com/${{ github.repository }}",
+            packages=find_packages(),
+            py_modules=["helpers"],
+            classifiers=[
+                "Development Status :: 4 - Beta",
+                "Intended Audience :: Developers",
+                "Intended Audience :: Science/Research",
+                "License :: OSI Approved :: MIT License",
+                "Operating System :: OS Independent",
+                "Programming Language :: Python :: 3",
+                "Programming Language :: Python :: 3.8",
+                "Programming Language :: Python :: 3.9",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+                "Topic :: Scientific/Engineering :: Artificial Intelligence",
+                "Topic :: Text Processing :: Linguistic",
+            ],
+            python_requires=">=3.8",
+            install_requires=requirements,
+            include_package_data=True,
+            package_data={
+                "": ["data/*.txt", "*.ipynb"],
+            },
+            extras_require={
+                "dev": ["pytest", "pytest-cov", "flake8", "black", "isort"],
+                "docs": ["sphinx", "sphinx-rtd-theme", "myst-parser"],
+            },
+        )
+        EOF
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Check package
+      run: |
+        python -m twine check dist/*
+
+    - name: Publish to Test PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        python -m twine upload --repository testpypi dist/* --skip-existing
+
+    # Uncomment the following step to publish to PyPI
+    # - name: Publish to PyPI
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+    #   run: |
+    #     python -m twine upload dist/*
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Create Dockerfile
+      run: |
+        cat > Dockerfile << 'EOF'
+        FROM python:3.9-slim
+
+        # Install system dependencies
+        RUN apt-get update && apt-get install -y \
+            graphviz \
+            graphviz-dev \
+            gcc \
+            g++ \
+            && rm -rf /var/lib/apt/lists/*
+
+        # Set working directory
+        WORKDIR /app
+
+        # Copy requirements and install Python dependencies
+        COPY requirements.txt .
+        RUN pip install --no-cache-dir -r requirements.txt
+
+        # Copy application code
+        COPY . .
+
+        # Download NLTK data
+        RUN python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+        # Create non-root user
+        RUN useradd -m -u 1000 nlpuser && chown -R nlpuser:nlpuser /app
+        USER nlpuser
+
+        # Expose Jupyter port
+        EXPOSE 8888
+
+        # Default command
+        CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+        EOF
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: nlp-pos-tagging
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

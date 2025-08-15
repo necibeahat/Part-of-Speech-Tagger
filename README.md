@@ -47,12 +47,117 @@ __HMM__ is a probabilistic model that calculates the likelihood of a tag and a w
 - Emissional probability: how likely is for a noun to be 'medicine' (form example above), and a verb to be treat. 
 
 ## How to run it locally
-Check out the Jupiter notebook with name '_HiddenMarkovModelforPOS.ipynb_' 
+
+### Quick Start
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Download NLTK data: `python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"`
+4. Run the Jupyter notebook: `jupyter notebook HiddenMarkovModelforPOS.ipynb`
+
+### Using Make Commands
+This project includes a Makefile for convenient development tasks:
+
+```bash
+# Install dependencies and set up environment
+make install
+
+# Run all tests
+make test
+
+# Format code and run quality checks
+make all
+
+# Start Jupyter notebook server
+make notebook
+
+# See all available commands
+make help
+```
+
+### Development Setup
+For development work:
+```bash
+# Set up development environment with pre-commit hooks
+make dev-setup
+
+# Run tests with coverage
+make test-coverage
+
+# Check code formatting and security
+make format-check lint security
+```
+
+## GitHub Actions CI/CD
+
+This project includes comprehensive GitHub Actions workflows for:
+
+- **Continuous Integration**: Automated testing across multiple Python versions and operating systems
+- **Code Quality**: Automated linting, formatting checks, and security scanning
+- **Documentation**: Automatic documentation building and deployment
+- **Release Management**: Automated package publishing and Docker image building
+
+### Workflow Status
+The following workflows run automatically on push and pull requests:
+
+- ✅ **CI Pipeline**: Tests, linting, notebook validation, data integrity checks
+- 🔒 **Security Scanning**: Dependency vulnerability scanning, CodeQL analysis
+- 📚 **Documentation**: API docs generation, README validation
+- 🚀 **Release**: Automated releases on version tags
+
+For detailed information about the GitHub Actions setup, see [GITHUB_ACTIONS_DOCUMENTATION.md](GITHUB_ACTIONS_DOCUMENTATION.md).
+
+## Testing
+
+The project includes comprehensive test coverage:
+
+```bash
+# Run unit tests
+make test-unit
+
+# Run integration tests with real data
+make test-integration
+
+# Run all tests with coverage report
+make test-coverage
+```
+
+Test files:
+- `test_helpers.py`: Unit tests for helper functions
+- `test_integration.py`: Integration tests with actual Brown Corpus data
 
 ## Library 
-There are two main python libraries used in this project
-- I am using the [pomegranate](https://pomegranate.readthedocs.io/en/latest/) library  that has HMM implementation. 
-- NLTK: The data is downloaded from the [NLTK library](https://www.nltk.org/book/ch05.html). 
+The main Python libraries used in this project:
+- [pomegranate](https://pomegranate.readthedocs.io/en/latest/): HMM implementation
+- [NLTK](https://www.nltk.org/book/ch05.html): Natural language processing and Brown Corpus data
+- [matplotlib](https://matplotlib.org/): Data visualization
+- [pandas](https://pandas.pydata.org/): Data manipulation
+- [numpy](https://numpy.org/): Numerical computing
+
+## Project Structure
+```
+├── .github/workflows/          # GitHub Actions CI/CD workflows
+├── data/                       # Brown Corpus and universal tags data
+├── helpers.py                  # Core utility functions
+├── test_helpers.py            # Unit tests
+├── test_integration.py        # Integration tests
+├── HiddenMarkovModelforPOS.ipynb  # Main implementation notebook
+├── DownloadDataset.ipynb      # Data download notebook
+├── requirements.txt           # Python dependencies
+├── Makefile                   # Development commands
+└── GITHUB_ACTIONS_DOCUMENTATION.md  # CI/CD documentation
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Make your changes and add tests
+4. Run quality checks: `make all`
+5. Commit your changes: `git commit -am 'Add new feature'`
+6. Push to the branch: `git push origin feature/new-feature`
+7. Create a Pull Request
+
+The GitHub Actions workflows will automatically run tests and quality checks on your pull request.
 
 ## Acknowledgement
-I've completed a nanodegree in Natural Language Processing from Udacity. The tutors were amazing, and I learned a lot! This notebook uses the template I got as part of the course. The script has changed a lot since my submission, but the credit definately goes to the [Udacity team](@udacity/active-public-content) for their brilliant content. 
+I've completed a nanodegree in Natural Language Processing from Udacity. The tutors were amazing, and I learned a lot! This notebook uses the template I got as part of the course. The script has changed a lot since my submission, but the credit definitely goes to the [Udacity team](@udacity/active-public-content) for their brilliant content. 
