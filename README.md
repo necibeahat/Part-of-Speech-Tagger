@@ -1,5 +1,99 @@
 ## Introduction
 Do you remember back in school when we learned about word classes? How you tried to understand the differences between nouns, verbs, adjectives, and adverbs? These word classes are now useful when a computer tries to understand written text. They help us extract data and ask important questions, like "what" and "why," so we can derive insights. And to think, you once thought you’d never use word classes in your adult life. 
+## Architecture
+
+The following diagram illustrates the main components and their relationships in this Part-of-Speech tagging system:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                DATA LAYER                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────────────┐ │
+│  │ Brown Corpus    │    │ Universal Tags   │    │ NLTK Data Download          │ │
+│  │ (brown-         │    │ (tags-universal  │    │ (DownloadDataset.ipynb)     │ │
+│  │  universal.txt) │    │  .txt)           │    │                             │ │
+│  │ ~57k sentences  │    │ 12 POS tags      │    │ - Brown corpus access       │ │
+│  └─────────────────┘    └──────────────────┘    │ - NLTK integration          │ │
+│           │                       │              └─────────────────────────────┘ │
+└───────────┼───────────────────────┼──────────────────────────────────────────────┘
+            │                       │
+            ▼                       ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            CORE PROCESSING LAYER                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                        helpers.py                                          │ │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐ │ │
+│  │  │ Dataset Class   │  │ Subset Class    │  │ Utility Functions           │ │ │
+│  │  │ - Data loading  │  │ - Train/Test    │  │ - read_data()               │ │ │
+│  │  │ - Train/test    │  │   subsets       │  │ - read_tags()               │ │ │
+│  │  │   splitting     │  │ - Vocabulary    │  │ - pair_counts()             │ │ │
+│  │  │ - Sentence      │  │   management    │  │ - unigram_counts()          │ │ │
+│  │  │   management    │  │ - Stream access │  │ - bigram_counts()           │ │ │
+│  │  └─────────────────┘  └─────────────────┘  │ - model2png()               │ │ │
+│  │                                            │ - show_model()              │ │ │
+│  │                                            └─────────────────────────────┘ │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              MODEL LAYER                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                  HiddenMarkovModelforPOS.ipynb                             │ │
+│  │                                                                             │ │
+│  │  ┌─────────────────────────┐    ┌─────────────────────────────────────────┐ │ │
+│  │  │ Baseline Model          │    │ Hidden Markov Model                     │ │ │
+│  │  │ (SimpleTagger)          │    │ (HMM)                                   │ │ │
+│  │  │                         │    │                                         │ │ │
+│  │  │ - Most frequent class   │    │ - Transition probabilities             │ │ │
+│  │  │ - Word-tag frequency    │    │ - Emission probabilities               │ │ │
+│  │  │ - Simple lookup table   │    │ - Viterbi algorithm                    │ │ │
+│  │  │ - ~93% accuracy         │    │ - Pomegranate library                  │ │ │
+│  │  │                         │    │ - ~96% accuracy                        │ │ │
+│  │  └─────────────────────────┘    └─────────────────────────────────────────┘ │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           EVALUATION & OUTPUT LAYER                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────────┐   │
+│  │ Model           │  │ Visualization   │  │ Performance Metrics             │   │
+│  │ Comparison      │  │                 │  │                                 │   │
+│  │                 │  │ - Network       │  │ - Training accuracy             │   │
+│  │ - Baseline vs   │  │   graphs        │  │ - Testing accuracy              │   │
+│  │   HMM           │  │ - State         │  │ - Tag prediction                │   │
+│  │ - Accuracy      │  │   diagrams      │  │ - Error analysis                │   │
+│  │   comparison    │  │ - Model         │  │                                 │   │
+│  │                 │  │   topology      │  │                                 │   │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           EXTERNAL DEPENDENCIES                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  NLTK • Pomegranate • Matplotlib • NetworkX • NumPy • Pandas • PyDot          │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Relationships
+
+**Data Flow:**
+1. **Data Ingestion**: Brown corpus and universal tags are loaded through the Dataset class
+2. **Preprocessing**: Data is split into training (80%) and testing (20%) sets via Subset classes
+3. **Feature Extraction**: Statistical features (unigrams, bigrams, emissions) are computed
+4. **Model Training**: Both baseline (SimpleTagger) and HMM models are trained on the same data
+5. **Evaluation**: Models are compared using accuracy metrics on test data
+6. **Visualization**: Model topology and results are visualized using NetworkX and Matplotlib
+
+**Key Interactions:**
+- The Dataset class orchestrates data loading and provides structured access to sentences and tags
+- Helper functions support statistical computations required by both models
+- The HMM model leverages pomegranate library for probabilistic modeling
+- Visualization utilities enable model inspection and result presentation
 
 ## What is *Part of Speech Tagger*
 Part of speech tagging (PoS) is labelling words in a sentence according to their word classes or lexical categories, if you want it to sounds fancy, or simply their part of speech. Tagging part of speech (PoS) helps us understand unstructured text (e.g. academic literature, social media post) better, allowing us to extract information by analysing the gramatical structure of a sentence. Each word is assigned with a lexical category (e.g. verb, noun, modal), enabling us to extract data and convert unstructured text to structured format. 
