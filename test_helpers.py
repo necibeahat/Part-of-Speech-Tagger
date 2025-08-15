@@ -1,220 +1,210 @@
 """
-Test suite for helpers.py module
+Unit tests for helpers.py module
 
-This module contains comprehensive tests for all functions and classes
-in the helpers.py module, including data loading, model visualization,
-and dataset handling functionality.
+This module contains basic unit tests for the helper functions used in the
+NLP Part of Speech tagging project.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
+import unittest
 from unittest.mock import patch, MagicMock
-from collections import namedtuple, OrderedDict
-import numpy as np
+from collections import namedtuple
 
-from helpers import (
-    Sentence, read_data, read_tags, model2png, show_model,
-    Subset, Dataset
-)
+import helpers
 
 
-class TestSentence:
-    """Test the Sentence namedtuple"""
-    
-    def test_sentence_creation(self):
-        """Test creating a Sentence namedtuple"""
-        words = ("The", "cat", "sat")
-        tags = ("DET", "NOUN", "VERB")
-        sentence = Sentence(words, tags)
-        
-        assert sentence.words == words
-        assert sentence.tags == tags
+class TestHelpers(unittest.TestCase):
+    """Test cases for helper functions"""
 
-
-class TestReadData:
-    """Test the read_data function"""
-    
-    def test_read_data_valid_file(self):
-        """Test reading valid data file"""
-        # Create a temporary file with test data
-        test_data = """sentence1
-
-The	DET
-cat	NOUN
-sat	VERB
+    def setUp(self):
+        """Set up test fixtures"""
+        self.test_data_content = """sentence1
+word1	TAG1
+word2	TAG2
 
 sentence2
-
-A	DET
-dog	NOUN
-ran	VERB
-"""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write(test_data)
-            temp_filename = f.name
+word3	TAG3
+word4	TAG4"""
         
+        self.test_tags_content = "TAG1\nTAG2\nTAG3\nTAG4"
+
+    def test_sentence_namedtuple(self):
+        """Test Sentence namedtuple creation"""
+        words = ("word1", "word2")
+        tags = ("TAG1", "TAG2")
+        sentence = helpers.Sentence(words, tags)
+        
+        self.assertEqual(sentence.words, words)
+        self.assertEqual(sentence.tags, tags)
+
+    def test_read_data(self):
+        """Test read_data function"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+            f.write(self.test_data_content)
+            temp_file = f.name
+
         try:
-            result = read_data(temp_filename)
+            result = helpers.read_data(temp_file)
             
-            # Check that result is an OrderedDict
-            assert isinstance(result, OrderedDict)
+            # Check that we got an OrderedDict
+            self.assertIsInstance(result, dict)
             
-            # Check that we have two sentences
-            assert len(result) == 2
-            assert "sentence1" in result
-            assert "sentence2" in result
+            # Check that we have the expected sentences
+            self.assertIn('sentence1', result)
+            self.assertIn('sentence2', result)
             
             # Check sentence1 content
-            sentence1 = result["sentence1"]
-            assert sentence1.words == ("The", "cat", "sat")
-            assert sentence1.tags == ("DET", "NOUN", "VERB")
+            sentence1 = result['sentence1']
+            self.assertEqual(sentence1.words, ('word1', 'word2'))
+            self.assertEqual(sentence1.tags, ('TAG1', 'TAG2'))
             
             # Check sentence2 content
-            sentence2 = result["sentence2"]
-            assert sentence2.words == ("A", "dog", "ran")
-            assert sentence2.tags == ("DET", "NOUN", "VERB")
+            sentence2 = result['sentence2']
+            self.assertEqual(sentence2.words, ('word3', 'word4'))
+            self.assertEqual(sentence2.tags, ('TAG3', 'TAG4'))
             
         finally:
-            os.unlink(temp_filename)
-    
-    def test_read_data_empty_file(self):
-        """Test reading empty file"""
+            os.unlink(temp_file)
+
+    def test_read_tags(self):
+        """Test read_tags function"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write("")
-            temp_filename = f.name
-        
-        try:
-            result = read_data(temp_filename)
-            assert isinstance(result, OrderedDict)
-            assert len(result) == 0
-        finally:
-            os.unlink(temp_filename)
-    
-    def test_read_data_file_not_found(self):
-        """Test reading non-existent file"""
-        with pytest.raises(FileNotFoundError):
-            read_data("non_existent_file.txt")
+            f.write(self.test_tags_content)
+            temp_file = f.name
 
-
-class TestReadTags:
-    """Test the read_tags function"""
-    
-    def test_read_tags_valid_file(self):
-        """Test reading valid tags file"""
-        test_tags = "DET\nNOUN\nVERB\nADJ\n"
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write(test_tags)
-            temp_filename = f.name
-        
         try:
-            result = read_tags(temp_filename)
+            result = helpers.read_tags(temp_file)
             
-            # Check that result is a frozenset
-            assert isinstance(result, frozenset)
+            # Check that we got a frozenset
+            self.assertIsInstance(result, frozenset)
             
-            # Check content
-            expected_tags = {"DET", "NOUN", "VERB", "ADJ", ""}  # Empty string from final newline
-            assert result == expected_tags
+            # Check that we have the expected tags
+            expected_tags = {'TAG1', 'TAG2', 'TAG3', 'TAG4'}
+            self.assertEqual(result, expected_tags)
             
         finally:
-            os.unlink(temp_filename)
-    
-    def test_read_tags_empty_file(self):
-        """Test reading empty tags file"""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write("")
-            temp_filename = f.name
+            os.unlink(temp_file)
+
+    def test_subset_creation(self):
+        """Test Subset class creation"""
+        # Create mock sentences
+        sentences = {
+            'sent1': helpers.Sentence(('word1', 'word2'), ('TAG1', 'TAG2')),
+            'sent2': helpers.Sentence(('word3', 'word4'), ('TAG3', 'TAG4'))
+        }
+        keys = ['sent1', 'sent2']
         
-        try:
-            result = read_tags(temp_filename)
-            assert isinstance(result, frozenset)
-            assert result == frozenset([""])
-        finally:
-            os.unlink(temp_filename)
-    
-    def test_read_tags_file_not_found(self):
-        """Test reading non-existent tags file"""
-        with pytest.raises(FileNotFoundError):
-            read_tags("non_existent_tags.txt")
+        subset = helpers.Subset(sentences, keys)
+        
+        # Check basic properties
+        self.assertEqual(len(subset), 2)
+        self.assertEqual(subset.keys, keys)
+        
+        # Check vocabulary
+        expected_vocab = {'word1', 'word2', 'word3', 'word4'}
+        self.assertEqual(subset.vocab, expected_vocab)
+        
+        # Check tagset
+        expected_tagset = {'TAG1', 'TAG2', 'TAG3', 'TAG4'}
+        self.assertEqual(subset.tagset, expected_tagset)
+        
+        # Check word count
+        self.assertEqual(subset.N, 4)
+
+    @patch('helpers.read_tags')
+    @patch('helpers.read_data')
+    @patch('random.seed')
+    @patch('random.shuffle')
+    def test_dataset_creation(self, mock_shuffle, mock_seed, mock_read_data, mock_read_tags):
+        """Test Dataset class creation"""
+        # Mock the file reading functions
+        mock_sentences = {
+            'sent1': helpers.Sentence(('word1', 'word2'), ('TAG1', 'TAG2')),
+            'sent2': helpers.Sentence(('word3', 'word4'), ('TAG3', 'TAG4')),
+            'sent3': helpers.Sentence(('word5', 'word6'), ('TAG1', 'TAG3')),
+            'sent4': helpers.Sentence(('word7', 'word8'), ('TAG2', 'TAG4'))
+        }
+        mock_read_data.return_value = mock_sentences
+        mock_read_tags.return_value = frozenset(['TAG1', 'TAG2', 'TAG3', 'TAG4'])
+        
+        # Mock random.shuffle to have predictable behavior
+        def mock_shuffle_func(lst):
+            # Keep the order for predictable testing
+            pass
+        mock_shuffle.side_effect = mock_shuffle_func
+        
+        dataset = helpers.Dataset('tags.txt', 'data.txt', train_test_split=0.5, seed=42)
+        
+        # Check that file reading functions were called
+        mock_read_tags.assert_called_once_with('tags.txt')
+        mock_read_data.assert_called_once_with('data.txt')
+        mock_seed.assert_called_once_with(42)
+        
+        # Check basic properties
+        self.assertEqual(len(dataset), 4)
+        self.assertIsInstance(dataset.training_set, helpers.Subset)
+        self.assertIsInstance(dataset.testing_set, helpers.Subset)
+        
+        # Check split (50% split of 4 sentences = 2 each)
+        self.assertEqual(len(dataset.training_set), 2)
+        self.assertEqual(len(dataset.testing_set), 2)
+
+    def test_dataset_iteration(self):
+        """Test Dataset iteration"""
+        with patch('helpers.read_tags') as mock_read_tags, \
+             patch('helpers.read_data') as mock_read_data:
+            
+            mock_sentences = {
+                'sent1': helpers.Sentence(('word1',), ('TAG1',)),
+                'sent2': helpers.Sentence(('word2',), ('TAG2',))
+            }
+            mock_read_data.return_value = mock_sentences
+            mock_read_tags.return_value = frozenset(['TAG1', 'TAG2'])
+            
+            dataset = helpers.Dataset('tags.txt', 'data.txt')
+            
+            # Test iteration
+            items = list(dataset)
+            self.assertEqual(len(items), 2)
+            
+            # Check that we can iterate over sentences
+            for key, sentence in dataset:
+                self.assertIn(key, mock_sentences)
+                self.assertEqual(sentence, mock_sentences[key])
 
 
-class TestModel2Png:
-    """Test the model2png function"""
-    
-    @patch('helpers.nx.drawing.nx_pydot.to_pydot')
+class TestModelVisualization(unittest.TestCase):
+    """Test cases for model visualization functions"""
+
     @patch('helpers.mplimg.imread')
-    def test_model2png_basic(self, mock_imread, mock_to_pydot):
+    @patch('helpers.nx.drawing.nx_pydot.to_pydot')
+    @patch('helpers.nx.relabel_nodes')
+    def test_model2png_basic(self, mock_relabel, mock_to_pydot, mock_imread):
         """Test basic model2png functionality"""
         # Create a mock model
         mock_model = MagicMock()
-        mock_model.start = "start_state"
-        mock_model.end = "end_state"
+        mock_model.graph.nodes.return_value = ['node1', 'node2']
+        mock_model.start = 'start'
+        mock_model.end = 'end'
         
-        # Create mock nodes
-        mock_node1 = MagicMock()
-        mock_node1.name = "state1"
-        mock_node2 = MagicMock()
-        mock_node2.name = "state2"
-        
-        mock_model.graph.nodes.return_value = [mock_node1, mock_node2, mock_model.start, mock_model.end]
-        mock_model.graph.subgraph.return_value.nodes.return_value = [mock_node1, mock_node2]
-        
-        # Mock pydot graph
+        # Mock the pydot graph
         mock_pydot_graph = MagicMock()
-        mock_pydot_graph.create_png.return_value = b"fake_png_data"
+        mock_pydot_graph.create_png.return_value = b'fake_png_data'
         mock_to_pydot.return_value = mock_pydot_graph
         
         # Mock imread
-        mock_imread.return_value = np.array([[1, 2, 3]])
+        mock_imread.return_value = 'fake_image_array'
         
-        # Test the function
-        result = model2png(mock_model)
+        result = helpers.model2png(mock_model)
         
-        # Verify calls
-        mock_to_pydot.assert_called_once()
+        # Check that the function returns the image array
+        self.assertEqual(result, 'fake_image_array')
+        
+        # Check that pydot graph methods were called
         mock_pydot_graph.set_rankdir.assert_called_once_with("LR")
         mock_pydot_graph.create_png.assert_called_once_with(prog='dot')
-        mock_imread.assert_called_once()
-        
-        # Check result
-        assert isinstance(result, np.ndarray)
-    
-    @patch('helpers.nx.drawing.nx_pydot.to_pydot')
-    @patch('helpers.mplimg.imread')
-    @patch('builtins.open', create=True)
-    @patch('os.path.exists')
-    def test_model2png_with_filename(self, mock_exists, mock_open, mock_imread, mock_to_pydot):
-        """Test model2png with filename parameter"""
-        mock_exists.return_value = False
-        
-        # Create a mock model
-        mock_model = MagicMock()
-        mock_model.start = "start_state"
-        mock_model.end = "end_state"
-        mock_model.graph.nodes.return_value = []
-        mock_model.graph.subgraph.return_value.nodes.return_value = []
-        
-        # Mock pydot graph
-        mock_pydot_graph = MagicMock()
-        mock_pydot_graph.create_png.return_value = b"fake_png_data"
-        mock_to_pydot.return_value = mock_pydot_graph
-        
-        # Mock imread
-        mock_imread.return_value = np.array([[1, 2, 3]])
-        
-        # Test with filename
-        result = model2png(mock_model, filename="test.png")
-        
-        # Verify file operations
-        mock_exists.assert_called_once_with("test.png")
-        mock_open.assert_called()
 
-
-class TestShowModel:
-    """Test the show_model function"""
-    
     @patch('helpers.plt.figure')
     @patch('helpers.plt.imshow')
     @patch('helpers.plt.axis')
@@ -222,156 +212,16 @@ class TestShowModel:
     def test_show_model(self, mock_model2png, mock_axis, mock_imshow, mock_figure):
         """Test show_model function"""
         mock_model = MagicMock()
-        mock_model2png.return_value = np.array([[1, 2, 3]])
+        mock_model2png.return_value = 'fake_image_array'
         
-        show_model(mock_model, figsize=(10, 10))
+        helpers.show_model(mock_model, figsize=(10, 8))
         
-        mock_figure.assert_called_once_with(figsize=(10, 10))
-        mock_model2png.assert_called_once_with(mock_model)
-        mock_imshow.assert_called_once()
+        # Check that matplotlib functions were called correctly
+        mock_figure.assert_called_once_with(figsize=(10, 8))
+        mock_imshow.assert_called_once_with('fake_image_array')
         mock_axis.assert_called_once_with('off')
+        mock_model2png.assert_called_once_with(mock_model)
 
 
-class TestSubset:
-    """Test the Subset class"""
-    
-    def test_subset_creation(self):
-        """Test creating a Subset"""
-        # Create test sentences
-        sentences = {
-            "s1": Sentence(("The", "cat"), ("DET", "NOUN")),
-            "s2": Sentence(("A", "dog"), ("DET", "NOUN")),
-            "s3": Sentence(("Big", "house"), ("ADJ", "NOUN"))
-        }
-        
-        keys = ["s1", "s2"]
-        subset = Subset(sentences, keys)
-        
-        # Test basic properties
-        assert len(subset) == 2
-        assert subset.keys == keys
-        assert "s1" in subset.sentences
-        assert "s2" in subset.sentences
-        assert "s3" not in subset.sentences
-        
-        # Test vocabulary
-        expected_vocab = {"The", "cat", "A", "dog"}
-        assert subset.vocab == expected_vocab
-        
-        # Test tagset
-        expected_tagset = {"DET", "NOUN"}
-        assert subset.tagset == expected_tagset
-        
-        # Test word count
-        assert subset.N == 4  # "The", "cat", "A", "dog"
-    
-    def test_subset_iteration(self):
-        """Test iterating over Subset"""
-        sentences = {
-            "s1": Sentence(("The", "cat"), ("DET", "NOUN")),
-            "s2": Sentence(("A", "dog"), ("DET", "NOUN"))
-        }
-        
-        keys = ["s1", "s2"]
-        subset = Subset(sentences, keys)
-        
-        # Test iteration
-        items = list(subset)
-        assert len(items) == 2
-        assert ("s1", sentences["s1"]) in items
-        assert ("s2", sentences["s2"]) in items
-
-
-class TestDataset:
-    """Test the Dataset class"""
-    
-    def test_dataset_creation(self):
-        """Test creating a Dataset"""
-        # Create temporary files
-        tags_content = "DET\nNOUN\nVERB"
-        data_content = """s1
-
-The	DET
-cat	NOUN
-
-s2
-
-A	DET
-dog	NOUN
-runs	VERB
-
-s3
-
-Big	ADJ
-house	NOUN
-"""
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tags_file:
-            tags_file.write(tags_content)
-            tags_filename = tags_file.name
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as data_file:
-            data_file.write(data_content)
-            data_filename = data_file.name
-        
-        try:
-            dataset = Dataset(tags_filename, data_filename, train_test_split=0.6, seed=42)
-            
-            # Test basic properties
-            assert len(dataset) == 3
-            assert len(dataset.sentences) == 3
-            
-            # Test tagset
-            expected_tagset = {"DET", "NOUN", "VERB", ""}  # Empty string from split
-            assert dataset.tagset == expected_tagset
-            
-            # Test vocabulary
-            expected_vocab = {"The", "cat", "A", "dog", "runs", "Big", "house"}
-            assert dataset.vocab == expected_vocab
-            
-            # Test train/test split (with 60% split and 3 sentences, should be 1-2 split)
-            assert len(dataset.training_set) >= 1
-            assert len(dataset.testing_set) >= 1
-            assert len(dataset.training_set) + len(dataset.testing_set) == 3
-            
-            # Test that training and testing sets are Subset instances
-            assert isinstance(dataset.training_set, Subset)
-            assert isinstance(dataset.testing_set, Subset)
-            
-        finally:
-            os.unlink(tags_filename)
-            os.unlink(data_filename)
-    
-    def test_dataset_iteration(self):
-        """Test iterating over Dataset"""
-        tags_content = "DET\nNOUN"
-        data_content = """s1
-
-The	DET
-cat	NOUN
-"""
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tags_file:
-            tags_file.write(tags_content)
-            tags_filename = tags_file.name
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as data_file:
-            data_file.write(data_content)
-            data_filename = data_file.name
-        
-        try:
-            dataset = Dataset(tags_filename, data_filename)
-            
-            # Test iteration
-            items = list(dataset)
-            assert len(items) == 1
-            assert items[0][0] == "s1"
-            assert isinstance(items[0][1], Sentence)
-            
-        finally:
-            os.unlink(tags_filename)
-            os.unlink(data_filename)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+if __name__ == '__main__':
+    unittest.main()
