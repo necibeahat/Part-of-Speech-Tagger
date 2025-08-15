@@ -1,0 +1,52 @@
+name: Validate README and Documentation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  metadata: read
+  packages: read
+
+jobs:
+  validate-documentation:
+    name: Validate README and Documentation
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        
+    - name: Install markdownlint-cli
+      run: npm install -g markdownlint-cli
+      
+    - name: Run markdownlint on README
+      run: markdownlint README.md --config .markdownlint.json || true
+      
+    - name: Install link checker
+      run: npm install -g markdown-link-check
+      
+    - name: Check README for broken links
+      run: markdown-link-check README.md --config .markdown-link-check.json || true
+      
+    - name: Check that key sections exist in README
+      run: |
+        python -c "
+        with open('README.md', 'r') as f:
+            content = f.read().lower()
+        
+        required_sections = ['introduction', 'installation', 'usage', 'data', 'method']
+        missing = [section for section in required_sections if section not in content]
+        
+        if missing:
+            print(f'Missing sections in README: {missing}')
+            exit(1)
+        else:
+            print('✅ All required sections found in README')
+        "

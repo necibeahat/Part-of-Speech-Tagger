@@ -1,3 +1,8 @@
+[![CI Pipeline](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/ci.yml)
+[![Dependency Updates](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/dependency-update.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/dependency-update.yml)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 ## Introduction
 Do you remember back in school when we learned about word classes? How you tried to understand the differences between nouns, verbs, adjectives, and adverbs? These word classes are now useful when a computer tries to understand written text. They help us extract data and ask important questions, like "what" and "why," so we can derive insights. And to think, you once thought you’d never use word classes in your adult life. 
 
@@ -56,3 +61,93 @@ There are two main python libraries used in this project
 
 ## Acknowledgement
 I've completed a nanodegree in Natural Language Processing from Udacity. The tutors were amazing, and I learned a lot! This notebook uses the template I got as part of the course. The script has changed a lot since my submission, but the credit definately goes to the [Udacity team](@udacity/active-public-content) for their brilliant content. 
+
+## Development and CI/CD
+
+This project includes a comprehensive GitHub Actions CI/CD pipeline that ensures code quality, security, and reliability.
+
+### 🚀 Continuous Integration Features
+
+- **Multi-Python Testing**: Automated testing across Python 3.8, 3.9, 3.10, and 3.11
+- **Notebook Validation**: Automatic execution and validation of Jupyter notebooks
+- **Code Quality Checks**: Linting with flake8, formatting with black, and type checking with mypy
+- **Security Scanning**: Vulnerability detection using safety, bandit, and pip-audit
+- **Documentation Generation**: Automatic conversion of notebooks to HTML and PDF formats
+- **Dependency Management**: Automated dependency updates and security audits
+
+### 🔧 Workflow Overview
+
+#### CI Pipeline (`ci.yml`)
+Triggered on push/PR to main/develop branches:
+- **Test Job**: Multi-version Python testing with notebook execution
+- **Security Scan**: Vulnerability scanning and security report generation  
+- **Code Quality**: Static analysis and code quality metrics
+- **Documentation**: Automated documentation generation (main branch only)
+
+#### Dependency Updates (`dependency-update.yml`)
+Scheduled weekly and on-demand:
+- **Security Audit**: Regular vulnerability assessments
+- **Dependency Review**: Automated dependency update PRs
+- **Compliance Monitoring**: Continuous security compliance checking
+
+### 📊 Artifacts and Reports
+
+The CI pipeline generates several types of artifacts:
+- **Notebook Outputs**: HTML versions of executed notebooks (30-day retention)
+- **Test Results**: Coverage reports and test outputs (7-day retention)
+- **Security Reports**: Vulnerability scans and audit results (30-90 day retention)
+- **Code Quality Reports**: Linting and analysis results (30-day retention)
+- **Documentation**: Complete project documentation (90-day retention)
+
+### 🔒 Security Features
+
+- **Automated Vulnerability Scanning**: Regular security audits using multiple tools
+- **Dependency Review**: Automatic review of dependency changes in PRs
+- **Modern Actions**: Uses latest GitHub Actions (including `actions/upload-artifact@v4`)
+- **Secure Token Handling**: Proper permissions and token management
+
+### 💻 Local Development
+
+To run the project locally with the same environment as CI:
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+pip install pytest pytest-cov flake8 black jupyter nbconvert
+
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get install graphviz graphviz-dev
+
+# Download NLTK data
+python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+# Run tests
+python -m pytest test_helpers.py -v
+
+# Check code quality
+flake8 . --max-line-length=127
+black --check .
+
+# Execute notebooks
+jupyter nbconvert --to notebook --execute --inplace HiddenMarkovModelforPOS.ipynb
+```
+
+### 📈 Monitoring and Maintenance
+
+- **Status Badges**: Build status visible in README
+- **Weekly Audits**: Automated security and dependency reviews
+- **Quality Metrics**: Continuous code quality monitoring
+- **Documentation Updates**: Automatic documentation regeneration
+
+For detailed workflow documentation, see [`.github/workflows/README.md`](.github/workflows/README.md).
+
+### 🤝 Contributing
+
+When contributing to this project:
+1. Ensure all CI checks pass
+2. Follow the established code formatting (black)
+3. Add tests for new functionality
+4. Update documentation as needed
+5. Review security scan results
+
+The CI pipeline will automatically validate your contributions and provide feedback through status checks and artifact reports. 

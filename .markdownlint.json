@@ -1,0 +1,33 @@
+{
+  "default": true,
+  "MD013": {
+    "line_length": 120,
+    "code_blocks": false,
+    "tables": false
+  },
+  "MD022": {
+    "lines_above": 1,
+    "lines_below": 1
+  },
+  "MD032": {
+    "ul_single": 1,
+    "ol_single": 1,
+    "ul_multi": 1,
+    "ol_multi": 1
+  },
+  "MD007": {
+    "indent": 2
+  },
+  "MD009": {
+    "br_spaces": 2
+  },
+  "MD031": {
+    "list_items": true
+  },
+  "MD040": {
+    "allowed_languages": ["bash", "python", "javascript", "json", "yaml", "text", "shell"]
+  },
+  "MD050": {
+    "style": "asterisk"
+  }
+}
