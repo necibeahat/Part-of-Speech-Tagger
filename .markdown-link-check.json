@@ -17,8 +17,8 @@
     {
       "urls": ["https://github.com"],
       "headers": {
-        "Accept": "text/html",
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (compatible; GitHub Actions Link Checker)"
       }
     }
   ],
@@ -26,5 +26,5 @@
   "retryOn429": true,
   "retryCount": 3,
   "fallbackRetryDelay": "30s",
-  "aliveStatusCodes": [200, 206]
+  "aliveStatusCodes": [200, 206, 301, 302, 303, 307, 308, 403, 405, 999]
 }

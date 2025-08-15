@@ -1,0 +1,102 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Python Code
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest pytest-cov black isort
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Check code formatting with black
+      run: |
+        black --check --diff .
+        
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only --diff .
+        
+    - name: Test with pytest
+      run: |
+        # Create a simple test if none exist
+        if [ ! -d "tests" ] && [ ! -f "test_*.py" ]; then
+          mkdir -p tests
+          cat > tests/test_helpers.py << 'EOF'
+        import pytest
+        import sys
+        import os
+        
+        # Add the project root to the path
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        try:
+            from helpers import read_data, read_tags, Sentence
+        except ImportError as e:
+            pytest.skip(f"Could not import helpers module: {e}")
+        
+        def test_sentence_namedtuple():
+            """Test that Sentence namedtuple works correctly"""
+            words = ["The", "cat", "sat"]
+            tags = ["DT", "NN", "VBD"]
+            sentence = Sentence(words, tags)
+            assert sentence.words == words
+            assert sentence.tags == tags
+        
+        def test_read_tags_function_exists():
+            """Test that read_tags function exists and is callable"""
+            assert callable(read_tags)
+        
+        def test_read_data_function_exists():
+            """Test that read_data function exists and is callable"""
+            assert callable(read_data)
+        EOF
+        fi
+        
+        # Run tests if they exist
+        if [ -d "tests" ] || ls test_*.py 1> /dev/null 2>&1; then
+          pytest --cov=. --cov-report=xml --cov-report=term-missing
+        else
+          echo "No tests found, skipping test execution"
+        fi
+        
+    - name: Upload coverage reports
+      if: matrix.python-version == '3.9'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false

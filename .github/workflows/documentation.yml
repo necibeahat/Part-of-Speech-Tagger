@@ -1,315 +1,42 @@
-name: Documentation
+name: Validate README and Documentation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  metadata: read
+  packages: read
 
 jobs:
-  build-docs:
-    name: Build Documentation
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-        cache: 'pip'
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y graphviz graphviz-dev pandoc
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install sphinx sphinx-rtd-theme myst-parser
-
-    - name: Download NLTK data
-      run: |
-        python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
-
-    - name: Generate API documentation
-      run: |
-        # Create docs directory structure
-        mkdir -p docs/source
-        
-        # Generate API documentation from docstrings
-        sphinx-apidoc -o docs/source . --separate --force
-        
-        # Create basic Sphinx configuration
-        cat > docs/source/conf.py << 'EOF'
-        import os
-        import sys
-        sys.path.insert(0, os.path.abspath('../..'))
-
-        project = 'Hidden Markov Model for POS Tagging'
-        copyright = '2024, NLP Project'
-        author = 'NLP Project Team'
-
-        extensions = [
-            'sphinx.ext.autodoc',
-            'sphinx.ext.viewcode',
-            'sphinx.ext.napoleon',
-            'myst_parser',
-        ]
-
-        templates_path = ['_templates']
-        exclude_patterns = []
-
-        html_theme = 'sphinx_rtd_theme'
-        html_static_path = ['_static']
-
-        # Napoleon settings
-        napoleon_google_docstring = True
-        napoleon_numpy_docstring = True
-        napoleon_include_init_with_doc = False
-        napoleon_include_private_with_doc = False
-        EOF
-
-        # Create main index file
-        cat > docs/source/index.rst << 'EOF'
-        Hidden Markov Model for POS Tagging
-        ===================================
-
-        This project implements Part of Speech (POS) tagging using Hidden Markov Models.
-
-        .. toctree::
-           :maxdepth: 2
-           :caption: Contents:
-
-           modules
-
-        Overview
-        --------
-
-        This project uses Hidden Markov Models to perform Part of Speech tagging on text data.
-        The implementation uses the Brown Corpus with universal tags for training and evaluation.
-
-        Key Features
-        -----------
-
-        * Hidden Markov Model implementation for POS tagging
-        * Data processing utilities for Brown Corpus
-        * Model visualization capabilities
-        * Comprehensive testing suite
-
-        API Reference
-        =============
-
-        .. automodule:: helpers
-           :members:
-           :undoc-members:
-           :show-inheritance:
-
-        Indices and tables
-        ==================
-
-        * :ref:`genindex`
-        * :ref:`modindex`
-        * :ref:`search`
-        EOF
-
-    - name: Build Sphinx documentation
-      run: |
-        cd docs
-        sphinx-build -b html source build/html -W
-
-    - name: Convert notebooks to documentation
-      run: |
-        # Convert notebooks to markdown for documentation
-        jupyter nbconvert --to markdown HiddenMarkovModelforPOS.ipynb --output docs/hmm-tutorial.md
-        jupyter nbconvert --to markdown DownloadDataset.ipynb --output docs/data-download.md
-
-    - name: Generate project documentation
-      run: |
-        # Create comprehensive project documentation
-        mkdir -p docs/project
-        
-        # Copy README as main documentation
-        cp README.md docs/project/
-        
-        # Create additional documentation files
-        cat > docs/project/installation.md << 'EOF'
-        # Installation Guide
-
-        ## Prerequisites
-
-        - Python 3.8 or higher
-        - pip package manager
-        - Git
-
-        ## System Dependencies
-
-        ### Ubuntu/Debian
-        ```bash
-        sudo apt-get update
-        sudo apt-get install -y graphviz graphviz-dev
-        ```
-
-        ### macOS
-        ```bash
-        brew install graphviz
-        ```
-
-        ### Windows
-        ```bash
-        choco install graphviz
-        ```
-
-        ## Python Dependencies
-
-        1. Clone the repository:
-        ```bash
-        git clone <repository-url>
-        cd <repository-name>
-        ```
-
-        2. Create a virtual environment:
-        ```bash
-        python -m venv venv
-        source venv/bin/activate  # On Windows: venv\Scripts\activate
-        ```
-
-        3. Install dependencies:
-        ```bash
-        pip install -r requirements.txt
-        ```
-
-        4. Download NLTK data:
-        ```bash
-        python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
-        ```
-
-        ## Verification
-
-        Run the tests to verify installation:
-        ```bash
-        pytest test_helpers.py -v
-        ```
-        EOF
-
-        cat > docs/project/usage.md << 'EOF'
-        # Usage Guide
-
-        ## Running the Jupyter Notebooks
-
-        ### Main HMM Implementation
-        ```bash
-        jupyter notebook HiddenMarkovModelforPOS.ipynb
-        ```
-
-        ### Data Download
-        ```bash
-        jupyter notebook DownloadDataset.ipynb
-        ```
-
-        ## Using the Helper Functions
-
-        ```python
-        from helpers import Dataset, read_data, read_tags
-
-        # Load the dataset
-        dataset = Dataset('data/tags-universal.txt', 'data/brown-universal.txt')
-
-        # Access training and testing data
-        training_data = dataset.training_set
-        testing_data = dataset.testing_set
-
-        # Get vocabulary and tagset
-        vocab = dataset.vocab
-        tagset = dataset.tagset
-        ```
-
-        ## Model Training and Evaluation
-
-        The main notebook demonstrates:
-        - Data preprocessing
-        - HMM model training
-        - Model evaluation
-        - Comparison with baseline methods
-        - Visualization of results
-
-        ## Testing
-
-        Run the test suite:
-        ```bash
-        # Run all tests
-        pytest
-
-        # Run with coverage
-        pytest --cov=helpers
-
-        # Run specific test file
-        pytest test_helpers.py -v
-        ```
-        EOF
-
-    - name: Upload documentation artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: |
-          docs/
-          *.md
-
-  deploy-docs:
-    name: Deploy Documentation
-    runs-on: ubuntu-latest
-    needs: build-docs
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download documentation artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: documentation
-        path: docs-build/
-
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: docs-build/docs/build/html
-        cname: # Add your custom domain if you have one
-
-  validate-readme:
+  validate-documentation:
     name: Validate README and Documentation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Install markdown linter
-      run: |
-        npm install -g markdownlint-cli
-
-    - name: Lint README
-      run: |
-        markdownlint README.md --config .markdownlint.json || true
-
-    - name: Check for broken links
-      run: |
-        # Install link checker
-        npm install -g markdown-link-check
+      with:
+        fetch-depth: 1
         
-        # Check README for broken links
-        markdown-link-check README.md --config .markdown-link-check.json || true
-
-    - name: Validate documentation completeness
+    - name: Install markdownlint-cli
+      run: npm install -g markdownlint-cli
+      
+    - name: Run markdownlint on README
+      run: markdownlint README.md --config .markdownlint.json || true
+      
+    - name: Install link checker
+      run: npm install -g markdown-link-check
+      
+    - name: Check README for broken links
+      run: markdown-link-check README.md --config .markdown-link-check.json || true
+      
+    - name: Check that key sections exist in README
       run: |
-        # Check that key sections exist in README
         python -c "
         with open('README.md', 'r') as f:
             content = f.read().lower()
@@ -321,5 +48,5 @@ jobs:
             print(f'Missing sections in README: {missing}')
             exit(1)
         else:
-            print('✓ All required sections found in README')
+            print('✅ All required sections found in README')
         "

@@ -1,87 +1,74 @@
-# Makefile for NLP POS Tagging Project
+# Makefile for Part-of-Speech Tagger project
 
-.PHONY: help install test lint format clean docs docker-build docker-run
+.PHONY: help install install-dev test lint format check clean setup-dev run-notebook
 
 # Default target
 help:
 	@echo "Available commands:"
-	@echo "  install     - Install dependencies"
-	@echo "  test        - Run all tests"
-	@echo "  test-unit   - Run unit tests only"
-	@echo "  test-integration - Run integration tests only"
-	@echo "  test-coverage - Run tests with coverage report"
-	@echo "  lint        - Run code linting"
-	@echo "  format      - Format code with black and isort"
-	@echo "  format-check - Check code formatting without making changes"
-	@echo "  clean       - Clean up temporary files"
-	@echo "  docs        - Build documentation"
-	@echo "  notebook    - Start Jupyter notebook server"
-	@echo "  docker-build - Build Docker image"
-	@echo "  docker-run  - Run Docker container"
-	@echo "  security    - Run security checks"
-	@echo "  all         - Run format, lint, and test"
+	@echo "  install      - Install production dependencies"
+	@echo "  install-dev  - Install development dependencies"
+	@echo "  setup-dev    - Set up development environment"
+	@echo "  test         - Run tests"
+	@echo "  lint         - Run code linting"
+	@echo "  format       - Format code with black and isort"
+	@echo "  check        - Run all checks (lint, format, test)"
+	@echo "  clean        - Clean up temporary files"
+	@echo "  run-notebook - Start Jupyter notebook server"
+	@echo "  docs-check   - Check documentation"
 
-# Installation
+# Installation targets
 install:
-	pip install --upgrade pip
 	pip install -r requirements.txt
-	python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
+
+install-dev: install
+	pip install pytest pytest-cov flake8 black isort jupyter notebook
+
+setup-dev: install-dev
+	@echo "Development environment setup complete!"
+	@echo "You can now run 'make check' to verify everything works."
 
 # Testing
 test:
-	pytest test_helpers.py test_integration.py -v
+	python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html
 
-test-unit:
-	pytest test_helpers.py -v
-
-test-integration:
-	pytest test_integration.py -v
-
-test-coverage:
-	pytest test_helpers.py test_integration.py -v --cov=helpers --cov-report=html --cov-report=term-missing
-
-test-slow:
-	pytest test_integration.py -v -m slow
+test-quick:
+	python -m pytest tests/ -v
 
 # Code quality
 lint:
-	flake8 .
-	@echo "✓ Linting passed"
+	flake8 . --count --statistics
+	@echo "Linting complete!"
 
 format:
 	black .
 	isort .
-	@echo "✓ Code formatted"
+	@echo "Code formatting complete!"
 
 format-check:
 	black --check --diff .
 	isort --check-only --diff .
-	@echo "✓ Code formatting is correct"
 
-# Security
-security:
-	safety check
-	bandit -r . -ll
-	@echo "✓ Security checks completed"
+# Combined checks
+check: format-check lint test
+	@echo "All checks passed!"
 
-# Documentation
-docs:
-	@echo "Building documentation..."
-	mkdir -p docs/source
-	sphinx-apidoc -o docs/source . --separate --force
-	cd docs && sphinx-build -b html source build/html
-	@echo "✓ Documentation built in docs/build/html/"
+# Documentation checks
+docs-check:
+	@echo "Checking documentation..."
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		markdownlint README.md --config .markdownlint.json; \
+	else \
+		echo "markdownlint not installed. Run: npm install -g markdownlint-cli"; \
+	fi
+	@if command -v markdown-link-check >/dev/null 2>&1; then \
+		markdown-link-check README.md --config .markdown-link-check.json; \
+	else \
+		echo "markdown-link-check not installed. Run: npm install -g markdown-link-check"; \
+	fi
 
-# Jupyter
-notebook:
-	jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
-
-# Docker
-docker-build:
-	docker build -t nlp-pos-tagging .
-
-docker-run:
-	docker run -p 8888:8888 -v $(PWD):/app nlp-pos-tagging
+# Jupyter notebook
+run-notebook:
+	jupyter notebook
 
 # Cleanup
 clean:
@@ -89,35 +76,21 @@ clean:
 	find . -type d -name "__pycache__" -delete
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +
-	rm -rf build/
-	rm -rf dist/
 	rm -rf htmlcov/
 	rm -rf .coverage
-	rm -rf docs/build/
-	@echo "✓ Cleaned up temporary files"
+	rm -rf dist/
+	rm -rf build/
+	@echo "Cleanup complete!"
 
-# Comprehensive check
-all: format lint test
-	@echo "✓ All checks passed!"
+# Data download (if needed)
+download-data:
+	python -c "import nltk; nltk.download('brown'); nltk.download('universal_tagset')"
 
-# Development setup
-dev-setup: install
-	pip install pre-commit
-	pre-commit install
-	@echo "✓ Development environment set up"
+# Run the main analysis
+run-analysis:
+	jupyter nbconvert --to notebook --execute HiddenMarkovModelforPOS.ipynb --output HiddenMarkovModelforPOS_executed.ipynb
 
-# Release preparation
-release-check: format-check lint test-coverage security
-	@echo "✓ Release checks passed!"
-
-# Validate notebooks
-validate-notebooks:
-	jupyter nbconvert --to notebook --execute --inplace HiddenMarkovModelforPOS.ipynb --ExecutePreprocessor.timeout=600
-	jupyter nbconvert --to notebook --execute --inplace DownloadDataset.ipynb --ExecutePreprocessor.timeout=300
-	@echo "✓ Notebooks validated"
-
-# Convert notebooks to HTML
-notebooks-html:
-	jupyter nbconvert --to html HiddenMarkovModelforPOS.ipynb
-	jupyter nbconvert --to html DownloadDataset.ipynb
-	@echo "✓ Notebooks converted to HTML"
+# GitHub Actions simulation
+simulate-ci: format-check lint test docs-check
+	@echo "Simulating GitHub Actions CI pipeline..."
+	@echo "All CI checks completed successfully!"
