@@ -1,9 +1,22 @@
-pydot == 1.2.4
-matplotlib == 3.9.1
-pomegranate == 1.0.0
-matplotlib == 2.1.1
-nltk == 3.2.5
-pandas == 0.22.0
-scikit-learn == 0.19.1
-numpy < 1.20
-pandas == 1.2.3
+# Core ML and Data Processing Libraries
+numpy >= 1.19.0, < 1.20.0
+pandas >= 1.2.3
+scikit-learn >= 0.19.1
+
+# Natural Language Processing
+nltk >= 3.2.5
+
+# Hidden Markov Model Implementation
+pomegranate >= 1.0.0
+
+# Visualization and Plotting
+matplotlib >= 3.0.0
+pydot >= 1.2.4
+
+# Jupyter Notebook Support
+jupyter >= 1.0.0
+ipython >= 7.0.0
+
+# Testing and Development
+pytest >= 6.0.0
+pytest-cov >= 2.10.0
